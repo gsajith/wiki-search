@@ -11,18 +11,26 @@ export default function SearchBox() {
   const [results, setResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const q = query.trim();
-    if (q === "") {
+  // Synchronous state resets live in the change handler (not the effect) so we
+  // don't call setState in the effect body. Showing "loading" the moment a key
+  // is pressed also makes the debounce window feel responsive.
+  function handleChange(value: string) {
+    setQuery(value);
+    if (value.trim() === "") {
       setResults([]);
       setLoading(false);
-      return;
+    } else {
+      setLoading(true);
     }
+  }
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q === "") return;
 
     // Abort the previous in-flight request when the query changes, so a slow
     // response for an older query can't clobber a newer one.
     const controller = new AbortController();
-    setLoading(true);
 
     const timer = setTimeout(async () => {
       try {
@@ -59,7 +67,7 @@ export default function SearchBox() {
       <input
         type="text"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         placeholder="Search Wikipedia titles…"
         autoFocus
         aria-label="Search Wikipedia titles"
